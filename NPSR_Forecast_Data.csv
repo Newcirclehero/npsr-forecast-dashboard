@@ -1,0 +1,4 @@
+PanelSize,VisitsPerPatient,FFS_Pct,PMPM_Rate,FFS_Rate,MaxVisits
+3000,3.0,50,24,150,10000
+4000,4.0,60,24,150,12000
+5000,3.5,40,24,150,15000

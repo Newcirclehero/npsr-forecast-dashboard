@@ -1,5 +1,4 @@
-# This file prepares a working Streamlit dashboard for Net Patient Service Revenue forecasting
-# Upload it to GitHub and deploy via Streamlit Cloud
+# Streamlit Dashboard: Strategic NPSR Forecast (Updated for Larger Panel Sizes)
 
 import streamlit as st
 import pandas as pd
@@ -17,6 +16,7 @@ st.title("Strategic Forecast Dashboard: Net Patient Service Revenue (NPSR)")
 st.markdown("""
 This dashboard allows healthcare leaders to evaluate the financial impact of increasing visit volume vs panel size
 under mixed payment models, including per-member-per-month (PMPM) capitation and fee-for-service (FFS).
+Now supports larger scale modeling (Panel Size: 100–50,000).
 """)
 
 # Sidebar Inputs
@@ -28,27 +28,40 @@ pmpm_rate = st.sidebar.number_input("PMPM Rate per Member ($)", value=24, step=1
 ffs_pct = st.sidebar.slider("Percent of Patients on FFS", 0, 100, 50)
 pmpm_pct = 100 - ffs_pct
 
-panel_size = st.sidebar.slider("Panel Size (Patients)", 500, 10000, 3000, step=100)
+panel_size = st.sidebar.slider("Panel Size (Patients)", 100, 50000, 3000, step=100)
 visits_per_patient = st.sidebar.slider("Visits per Patient per Year", 1, 10, 3)
 
 max_visits = st.sidebar.number_input("Operational Visit Capacity (Max Annual Visits)", value=10000, step=500)
 
-# Calculations
+# Scale-aware adjustments (optional, can be toggled in future)
 annual_visits = panel_size * visits_per_patient
 actual_visits = min(annual_visits, max_visits)
 
+if annual_visits > max_visits:
+    st.warning("⚠️ Visit volume exceeds operational capacity — FFS revenue is capped at maximum visit limit.")
+
+# Revenue Calculations
 ffs_revenue = actual_visits * (ffs_pct / 100) * ffs_rate
 pmpm_revenue = panel_size * (pmpm_pct / 100) * pmpm_rate * 12
 
 total_revenue = ffs_revenue + pmpm_revenue
-marginal_revenue_per_visit = ffs_rate * (ffs_pct / 100)  # Since PMPM doesn't increase with visit count
+marginal_revenue_per_visit = ffs_rate * (ffs_pct / 100)
 
-# Display
+# Optional Expansion Cost Calculation
+extra_visits = max(0, annual_visits - max_visits)
+extra_provider_fte = np.ceil(extra_visits / (22 * 230))  # assume 22 visits/day, 230 workdays/year
+extra_cost = extra_provider_fte * 180000  # estimated $180K per FTE/year
+
+# Display Metrics
 st.subheader("Revenue Forecast")
 st.metric("Annual FFS Revenue", f"${ffs_revenue:,.0f}")
 st.metric("Annual PMPM Revenue", f"${pmpm_revenue:,.0f}")
 st.metric("Total Annual Revenue", f"${total_revenue:,.0f}")
 st.metric("Marginal Revenue per Visit", f"${marginal_revenue_per_visit:,.2f}")
+
+if extra_visits > 0:
+    st.metric("Estimated Additional FTE Needed", f"{extra_provider_fte:.0f}")
+    st.metric("Added Annual Staffing Cost", f"${extra_cost:,.0f}")
 
 # Visualization
 st.subheader("Revenue Breakdown")
